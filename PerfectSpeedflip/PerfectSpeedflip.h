@@ -12,6 +12,11 @@ class PerfectSpeedflip: public BakkesMod::Plugin::BakkesModPlugin
 	virtual void onLoad();
 	virtual void onUnload();
 
+	void hookEvents();
+	void unhookEvents();
 
+	void startKickoff();
+	void hitBall();
+	void onTick();
 };
 
