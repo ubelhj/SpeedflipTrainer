@@ -5,6 +5,8 @@
 BAKKESMOD_PLUGIN(PerfectSpeedflip, "Trains the perfect speedflip kickoff", plugin_version, PLUGINTYPE_FREEPLAY)
 
 int tick = 0;
+std::string stageOneResults = "Stage 1 Results:\n";
+std::string stageTwoResults = "Stage 2 Results:\n";
 
 void PerfectSpeedflip::onLoad()
 {
@@ -44,13 +46,10 @@ void PerfectSpeedflip::onTick() {
 		return;
 	}
 
-	auto sw = gameWrapper->GetGameEventAsServer();
-	if (sw.IsNull()) return;
+	auto primaryCar = gameWrapper->GetLocalCar();
+	if (primaryCar.IsNull()) return;
 
-	auto primaryPRI = sw.GetLocalPrimaryPlayer();
-	if (primaryPRI.IsNull()) return;
-
-	ControllerInput input = primaryPRI.GetVehicleInput();
+	ControllerInput input = primaryCar.GetInput();
 	
 	cvarManager->log("Input on tick " + std::to_string(tick));
 	cvarManager->log("Activate Boost = " + std::to_string(input.ActivateBoost));
@@ -66,6 +65,73 @@ void PerfectSpeedflip::onTick() {
 	cvarManager->log("Throttle = " + std::to_string(input.Throttle));
 	cvarManager->log("Yaw = " + std::to_string(input.Yaw));
 
+	// checking inputs vs expected
+	/*
+	Duration 50
+		Throttle 1
+		Boost 1
+	Duration 5
+		Steer -0.7
+	Duration 13
+		Steer 0
+		Jump 1
+		Yaw -1
+	Duration 1
+		Jump 0
+		Yaw 0
+	Duration 1
+		Pitch -1.0
+		Roll 0.4
+		Jump 1
+	Duration 75
+		Roll 1.
+		Pitch 1.0
+	Duration 52
+		Steer 1
+		Yaw 1
+	Duration 50
+		Steer 0
+		Roll 0
+		Yaw 0
+	Duration 70
+		Pitch 0
+		Steer 0
+	Duration 1
+		Boost 0
+		Throttle 0
+	
+	*/
+	// 0-49
+	/* Duration 50
+		Throttle 1
+		Boost 1 */
+	if (tick < 50) {
+		if (!input.HoldingBoost) {
+			stageOneResults += "Must hold boost from tick 0 until tick 50, not boosting on tick " + std::to_string(tick) + "\n";
+			//cvarManager->log(results);
+		}
+		if (input.Throttle < 1.0) {
+			stageOneResults += "Must hold max throttle from tick 0 until tick 50, not max on tick " + 
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+			//cvarManager->log(stageOneResults);
+		}
+		if (input.Steer != 0) {
+			stageOneResults += "Must not steer from tick 0 until tick 50, steered on tick " +
+				std::to_string(tick) + "\n";
+		}
+	// 50 - 54
+	// Steer -0.7
+	} else if (tick < 55) {
+		if (input.Steer < -0.65) {
+			stageTwoResults += "Must steer of -0.7 (down left) from tick 50 until tick 54, steer too far left on tick " + 
+				std::to_string(tick) + " with steer " + std::to_string(input.Steer) + "\n";
+		} 
+		if (input.Steer > -0.75) {
+			stageTwoResults += "Must steer of -0.7 (down left) from tick 50 until tick 54, steer too far down on tick " +
+				std::to_string(tick) + " with steer " + std::to_string(input.Steer) + "\n";
+		}
+	}
+
 	tick++;
 }
 
@@ -74,7 +140,12 @@ void PerfectSpeedflip::hitBall() {
 	gameWrapper->UnhookEventPost("Function TAGame.Ball_TA.OnCarTouch");
 
 	cvarManager->log("Hit ball on tick " + std::to_string(tick));
+	cvarManager->log(stageOneResults);
+	cvarManager->log(stageTwoResults);
 	tick = 0;
+
+	stageOneResults = "Stage 1 Results:\n";
+	stageTwoResults = "Stage 2 Results:\n";
 }
 
 void PerfectSpeedflip::onUnload()
