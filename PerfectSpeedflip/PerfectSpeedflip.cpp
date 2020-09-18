@@ -7,6 +7,13 @@ BAKKESMOD_PLUGIN(PerfectSpeedflip, "Trains the perfect speedflip kickoff", plugi
 int tick = 0;
 std::string stageOneResults = "Stage 1 Results:\n";
 std::string stageTwoResults = "Stage 2 Results:\n";
+std::string stageThreeResults = "Stage 3 Results:\n";
+std::string stageFourResults = "Stage 4 Results:\n";
+std::string stageFiveResults = "Stage 5 Results:\n";
+std::string stageSixResults = "Stage 6 Results:\n";
+std::string stageSevenResults = "Stage 7 Results:\n";
+std::string stageEightResults = "Stage 8 Results:\n";
+std::string stageNineResults = "Stage 9 Results:\n";
 
 void PerfectSpeedflip::onLoad()
 {
@@ -19,6 +26,24 @@ void PerfectSpeedflip::onLoad()
 			} else {
 				unhookEvents();
 			}});
+	cvarManager->registerNotifier("speedflip_result_stage_one", 
+		[this](auto) { cvarManager->log(stageOneResults); }, "returns result of stage one", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_two",
+		[this](auto) { cvarManager->log(stageTwoResults); }, "returns result of stage two", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_three",
+		[this](auto) { cvarManager->log(stageThreeResults); }, "returns result of stage three", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_four",
+		[this](auto) { cvarManager->log(stageFourResults); }, "returns result of stage four", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_five",
+		[this](auto) { cvarManager->log(stageFiveResults); }, "returns result of stage five", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_six",
+		[this](auto) { cvarManager->log(stageSixResults); }, "returns result of stage six", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_seven",
+		[this](auto) { cvarManager->log(stageSevenResults); }, "returns result of stage seven", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_eight",
+		[this](auto) { cvarManager->log(stageEightResults); }, "returns result of stage eight", PERMISSION_ALL);
+	cvarManager->registerNotifier("speedflip_result_stage_nine",
+		[this](auto) { cvarManager->log(stageNineResults); }, "returns result of stage nine", PERMISSION_ALL);
 }
 
 void PerfectSpeedflip::hookEvents() {
@@ -34,6 +59,16 @@ void PerfectSpeedflip::startKickoff() {
 	if (gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
 		gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { onTick(); });
 		gameWrapper->HookEventPost("Function TAGame.Ball_TA.OnCarTouch", [this](std::string) { hitBall(); });
+		tick = 0;
+		stageOneResults = "Stage 1 Results:\n";
+		stageTwoResults = "Stage 2 Results:\n";
+		stageThreeResults = "Stage 3 Results:\n";
+		stageFourResults = "Stage 4 Results:\n";
+		stageFiveResults = "Stage 5 Results:\n";
+		stageSixResults = "Stage 6 Results:\n";
+		stageSevenResults = "Stage 7 Results:\n";
+		stageEightResults = "Stage 8 Results:\n";
+		stageNineResults = "Stage 9 Results:\n";
 	} else {
 		cvarManager->getCvar("speedflip_enable").setValue("0");
 		unhookEvents();
@@ -107,30 +142,272 @@ void PerfectSpeedflip::onTick() {
 		Boost 1 */
 	if (tick < 50) {
 		if (!input.HoldingBoost) {
-			stageOneResults += "Must hold boost from tick 0 until tick 50, not boosting on tick " + std::to_string(tick) + "\n";
+			stageOneResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 			//cvarManager->log(results);
 		}
 		if (input.Throttle < 1.0) {
-			stageOneResults += "Must hold max throttle from tick 0 until tick 50, not max on tick " + 
+			stageOneResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " + 
 				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
 			//cvarManager->log(stageOneResults);
 		}
 		if (input.Steer != 0) {
-			stageOneResults += "Must not steer from tick 0 until tick 50, steered on tick " +
-				std::to_string(tick) + "\n";
+			stageOneResults += "Must not steer from tick 0 until 49, steered on tick " +
+				std::to_string(tick) + " with steer " + std::to_string(input.Steer) + "\n";
+		}
+		if (input.Pitch != 0) {
+			stageOneResults += "Must not pitch up or down from tick 0 until 68, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
 		}
 	// 50 - 54
+	// duration 5
 	// Steer -0.7
 	} else if (tick < 55) {
-		if (input.Steer < -0.65) {
-			stageTwoResults += "Must steer of -0.7 (down left) from tick 50 until tick 54, steer too far left on tick " + 
+		if (!input.HoldingBoost) {
+			stageTwoResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageTwoResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		if (input.Steer < -0.75) {
+			stageTwoResults += "Must steer of -0.7 (70% left) from tick 50 until 54, steer too far left on tick " + 
 				std::to_string(tick) + " with steer " + std::to_string(input.Steer) + "\n";
 		} 
-		if (input.Steer > -0.75) {
-			stageTwoResults += "Must steer of -0.7 (down left) from tick 50 until tick 54, steer too far down on tick " +
+		if (input.Steer > -0.65) {
+			stageTwoResults += "Must steer of -0.7 (70% left) from tick 50 until 54, steer too far right on tick " +
 				std::to_string(tick) + " with steer " + std::to_string(input.Steer) + "\n";
 		}
+		if (input.Pitch != 0) {
+			stageTwoResults += "Must not move stick up or down from tick 0 until 68, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+	//55 - 67
+	//Duration 13
+	//Steer 0
+	//Jump 1
+	//Yaw - 1 (same as steer)
+	} else if (tick < 68) {
+		if (!input.HoldingBoost) {
+			stageThreeResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageThreeResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		/* steer is ignored as it often is bound to the same as Yaw
+		if (input.Steer != 0) {
+			stageThreeResults += "Must not steer from tick 55 until tick 67, steered on tick " +
+				std::to_string(tick) + "\n";
+		}*/
+		if (input.Pitch != 0) {
+			stageThreeResults += "Must not pitch up or down from tick 0 until 67, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (!input.Jump) {
+			stageThreeResults += "Must be jumping from tick 55 until 67, was not jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw > -1.0) {
+			stageThreeResults += "Must yaw of -1 (max air steer left) from tick 55 until 67, not left on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+	// 68
+	//Duration 1
+	//Jump 0
+	//Yaw 0
+	} else if (tick < 69) {
+		if (!input.HoldingBoost) {
+			stageFourResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageFourResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		/* steer is ignored as it often is bound to the same as Yaw
+		if (input.Steer != 0) {
+			stageFourResults += "Must not steer from tick 55 until tick 67, steered on tick " +
+				std::to_string(tick) + "\n";
+		}*/
+		if (input.Pitch != 0) {
+			stageFourResults += "Must not move pitch up or down from tick 0 until 68, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (input.Jump) {
+			stageFourResults += "Must not be jumping on tick 68, was jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw != 0) {
+			stageFourResults += "Must yaw of 0 (no air steer) from tick 68 until NA, yaw on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+	//69
+	//Duration 1
+	//Pitch - 1.0
+	//Roll 0.4
+	//Jump 1
+	} else if (tick < 70) {
+		if (!input.HoldingBoost) {
+			stageFiveResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageFiveResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		/* steer is ignored as it often is bound to the same as Roll
+		if (input.Steer != 0) {
+			stageFiveResults += "Must not steer from tick 55 until tick 67, steered on tick " +
+				std::to_string(tick) + "\n";
+		}*/
+		if (input.Pitch > -1.0) {
+			stageFiveResults += "Must pitch max down on tick 69, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (!input.Jump) {
+			stageFiveResults += "Must be jumping on tick 69, was not jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw != 0) {
+			stageFiveResults += "Must yaw of 0 (no air steer) from tick 68 until 144, yaw on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+		if (input.Roll < 0.4) {
+			stageFiveResults += "Must roll of 0.4 (slight right) on tick 69, roll too far left on tick " +
+				std::to_string(tick) + " with roll " + std::to_string(input.Roll) + "\n";
+		}
+	//70-144
+	//Duration 75
+	//Roll 1.
+	//Pitch 1.0
+	} else if (tick < 145) {
+		if (!input.HoldingBoost) {
+			stageSixResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageSixResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		/* steer is ignored as it often is bound to the same as Roll
+		if (input.Steer != 0) {
+			stageSixResults += "Must not steer from tick 55 until tick 67, steered on tick " +
+				std::to_string(tick) + "\n";
+		}*/
+		if (input.Pitch < 1.0) {
+			stageSixResults += "Must pitch max up from tick 70 until 246, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (input.Jump) {
+			stageSixResults += "Must have already flipped before tick 70, was jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw != 0) {
+			stageSixResults += "Must yaw of 0 (no air steer) from tick 68 until 144, yaw on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+		if (input.Roll < 1.0) {
+			stageSixResults += "Must roll of 1.0 (max right) from tick 70 until 196, roll too far left on tick " +
+				std::to_string(tick) + " with roll " + std::to_string(input.Roll) + "\n";
+		}
+	//145-196
+	//Duration 52
+	//Steer 1
+	//Yaw 1
+	} else if (tick < 197) {
+		if (!input.HoldingBoost) {
+			stageSevenResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageSevenResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		if (input.Steer < 1.0) {
+			stageSevenResults += "Must steer max right from tick 144 until 196, steered on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Pitch < 1.0) {
+			stageSevenResults += "Must pitch max up from tick 70 until 246, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (input.Jump) {
+			stageSevenResults += "Must have already flipped before tick 69, was jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw < 1.0) {
+			stageSevenResults += "Must yaw of 0 (no air steer) from tick 68 until 196, yaw on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+		if (input.Roll < 1.0) {
+			stageSevenResults += "Must roll of 1.0 (max right) from tick 68 until 196, roll too far left on tick " +
+				std::to_string(tick) + " with roll " + std::to_string(input.Roll) + "\n";
+		}
+	//197-246
+	//Duration 50
+	//Steer 0
+	//Roll 0
+	//Yaw 0
+	} else if (tick < 247) {
+		if (!input.HoldingBoost) {
+			stageEightResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageEightResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		if (input.Steer != 0) {
+			stageEightResults += "Must steer max right from tick 144 until 197, steered on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Pitch < 1.0) {
+			stageEightResults += "Must pitch max up from tick 70 until 246, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (input.Jump) {
+			stageEightResults += "Must have already flipped before tick 69, was jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw != 0) {
+			stageEightResults += "Must yaw of 0 (no air steer) from tick 197 until ball hit, yaw on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+		if (input.Roll != 0) {
+			stageEightResults += "Must not roll from tick 197 until ball hit, roll too far left on tick " +
+				std::to_string(tick) + " with roll " + std::to_string(input.Roll) + "\n";
+		}
+	//247-316
+	//Duration 70
+	//Pitch 0
+	//Steer 0
+	} else if (tick < 317) {
+		if (!input.HoldingBoost) {
+			stageEightResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
+		}
+		if (input.Throttle < 1.0) {
+			stageEightResults += "Must hold max throttle from tick 0 until ball is hit, not max on tick " +
+				std::to_string(tick) + " with throttle " + std::to_string(input.Throttle) + "\n";
+		}
+		if (input.Steer != 0) {
+			stageEightResults += "Must not steer from tick 247 until ball hit, steered on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Pitch != 0) {
+			stageEightResults += "Must not pitch tick 247 until ball hit, pitched on tick " +
+				std::to_string(tick) + " with pitch " + std::to_string(input.Pitch) + "\n";
+		}
+		if (input.Jump) {
+			stageEightResults += "Must have already flipped before tick 69, was jumping on tick " +
+				std::to_string(tick) + "\n";
+		}
+		if (input.Yaw != 0) {
+			stageEightResults += "Must yaw of 0 (no air steer) from tick 197 until ball hit, yaw on tick " +
+				std::to_string(tick) + " with yaw " + std::to_string(input.Yaw) + "\n";
+		}
+		if (input.Roll != 0) {
+			stageEightResults += "Must not roll from tick 197 until ball hit, roll too far left on tick " +
+				std::to_string(tick) + " with roll " + std::to_string(input.Roll) + "\n";
+		}
 	}
+	//Duration 1
+	//Boost 0
+	//Throttle 0
 
 	tick++;
 }
@@ -138,14 +415,17 @@ void PerfectSpeedflip::onTick() {
 void PerfectSpeedflip::hitBall() {
 	gameWrapper->UnhookEventPost("Function TAGame.Car_TA.SetVehicleInput");
 	gameWrapper->UnhookEventPost("Function TAGame.Ball_TA.OnCarTouch");
-
-	cvarManager->log("Hit ball on tick " + std::to_string(tick));
+	
 	cvarManager->log(stageOneResults);
 	cvarManager->log(stageTwoResults);
-	tick = 0;
-
-	stageOneResults = "Stage 1 Results:\n";
-	stageTwoResults = "Stage 2 Results:\n";
+	cvarManager->log(stageThreeResults);
+	cvarManager->log(stageFourResults);
+	cvarManager->log(stageFiveResults);
+	cvarManager->log(stageSixResults);
+	cvarManager->log(stageSevenResults);
+	cvarManager->log(stageEightResults);
+	cvarManager->log(stageNineResults);
+	cvarManager->log("Perfect theoretical ball hit is 318 ticks, you hit the ball on tick " + std::to_string(tick));
 }
 
 void PerfectSpeedflip::onUnload()
