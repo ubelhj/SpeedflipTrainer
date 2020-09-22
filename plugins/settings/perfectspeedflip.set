@@ -2,7 +2,7 @@ Exhibition Kickoff Timer
 9|Counts ticks in exhibition from GO! to ball hit
 1|Enable plugin|kickoff_timer_enable
 1|Enable overlay|kickoff_timer_enable_overlay
-0|Reset timers|kickoff_timer_reset_timer
+0|Reset average|kickoff_timer_reset_timer
 0|Score ball to reset kickoff (can be bound to a button as kickoff_timer_score)|kickoff_timer_score
 13|Color Selector|kickoff_timer_color
 4|X-location (% of screen)|kickoff_timer_x_location|0.0|1.0

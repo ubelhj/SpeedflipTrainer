@@ -114,7 +114,6 @@ void PerfectSpeedflip::onLoad()
 				if (car.IsNull()) return;
 				car.SetLocation(spawnLocations[spawnChoice]);
 				car.SetRotation(spawnRotations[spawnChoice]);
-
 			}
 		}, "moves car to selected spawn location", PERMISSION_ALL);
 
@@ -147,6 +146,7 @@ void PerfectSpeedflip::hookEvents() {
 	//gameWrapper->HookEventPost("Function TAGame.GameEvent_Soccar_TA.Countdown.EndState", [this](std::string) { startKickoff(); });
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_TA.BroadcastGoMessage", [this](std::string) { startKickoff(); });
 	gameWrapper->RegisterDrawable([this](auto canvas) { render(canvas); });
+	cvarManager->setBind("XboxTypeS_DPad_Up", "kickoff_timer_score");
 }
 
 void PerfectSpeedflip::unhookEvents() {
