@@ -5,6 +5,16 @@
 BAKKESMOD_PLUGIN(PerfectSpeedflip, "Trains the perfect speedflip kickoff", plugin_version, PLUGINTYPE_FREEPLAY)
 
 int tick = 0;
+int lastKickoffTime = 0;
+int averageKickoffTime = 0.0;
+int kickoffs = 0;
+float xLocation;
+float yLocation;
+LinearColor overlayColor;
+bool enabledOverlay;
+std::string enabledVarName = "kickoff_timer_enable";
+
+// unused parts of broken kickoff trainer
 std::string stageOneResults = "Stage 1 Results:\n";
 std::string stageTwoResults = "Stage 2 Results:\n";
 std::string stageThreeResults = "Stage 3 Results:\n";
@@ -14,18 +24,78 @@ std::string stageSixResults = "Stage 6 Results:\n";
 std::string stageSevenResults = "Stage 7 Results:\n";
 std::string stageEightResults = "Stage 8 Results:\n";
 std::string stageNineResults = "Stage 9 Results:\n";
+bool example = false;
 
 void PerfectSpeedflip::onLoad()
 {
 	cvarManager->log("Plugin loaded!");
 
-	cvarManager->registerCvar("speedflip_enable", "0", "enables speedflip trainer", true, true, 0, true, 1)
+	cvarManager->registerCvar(enabledVarName, "0", "enables speedflip trainer", true, true, 0, true, 1)
 		.addOnValueChanged([this](std::string, CVarWrapper cvar) {
 			if (cvar.getBoolValue()) {
 				hookEvents();
 			} else {
 				unhookEvents();
 			}});
+
+	// enables timer overlay
+	auto overlayEnableVar = cvarManager->registerCvar("kickoff_timer_enable_overlay",
+		"0", "enable timer overlay",
+		true, true, 0, true, 1);
+	enabledOverlay = overlayEnableVar.getBoolValue();
+	overlayEnableVar.addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		enabledOverlay = cvar.getBoolValue();
+		});
+
+	// sets cvar to move counter's X location
+	auto xLocVar = cvarManager->registerCvar("kickoff_timer_x_location",
+		"0", "set location of timer X in % of screen",
+		true, true, 0.0, true, 1.0);
+	xLocation = xLocVar.getFloatValue();
+	xLocVar.addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		xLocation = cvar.getFloatValue();
+		});
+
+	// sets cvar to move counter's Y location
+	auto yLocVar = cvarManager->registerCvar("kickoff_timer_y_location",
+		"0", "set location of timer Y in % of screen",
+		true, true, 0.0, true, 1.0);
+	yLocation = yLocVar.getFloatValue();
+	yLocVar.addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		yLocation = cvar.getFloatValue();
+		});
+
+	// chooses overlay's color
+	auto colorVar = cvarManager->registerCvar("kickoff_timer_color", "#FFFFFF", "color of overlay");
+	overlayColor = colorVar.getColorValue();
+	colorVar.addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		overlayColor = cvar.getColorValue();
+		});
+
+	cvarManager->registerNotifier("kickoff_timer_reset_timer",
+		[this](std::vector<std::string> params) {
+			lastKickoffTime = 0;
+			averageKickoffTime = 0;
+			kickoffs = 0;
+		}, "resets kickoff timer stats", PERMISSION_ALL);
+
+	cvarManager->registerNotifier("kickoff_timer_score",
+		[this](std::vector<std::string> params) {
+			if (gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
+				auto server = gameWrapper->GetGameEventAsServer();
+				if (server.IsNull()) return;
+				auto ball = server.GetBall();
+				ball.SetLocation(Vector(0, 5520, 100));
+				gameWrapper->UnhookEventPost("Function TAGame.Car_TA.SetVehicleInput");
+				gameWrapper->UnhookEventPost("Function TAGame.Ball_TA.OnCarTouch");
+			}
+		}, "resets kickoff by scoring goal", PERMISSION_ALL);
+
+	/*
+	cvarManager->registerCvar("speedflip_example", "0", "enables speedflip example", true, true, 0, true, 1)
+		.addOnValueChanged([this](std::string, CVarWrapper cvar) {
+		example = cvar.getBoolValue();
+		});
 	cvarManager->registerNotifier("speedflip_result_stage_one", 
 		[this](auto) { cvarManager->log(stageOneResults); }, "returns result of stage one", PERMISSION_ALL);
 	cvarManager->registerNotifier("speedflip_result_stage_two",
@@ -43,12 +113,13 @@ void PerfectSpeedflip::onLoad()
 	cvarManager->registerNotifier("speedflip_result_stage_eight",
 		[this](auto) { cvarManager->log(stageEightResults); }, "returns result of stage eight", PERMISSION_ALL);
 	cvarManager->registerNotifier("speedflip_result_stage_nine",
-		[this](auto) { cvarManager->log(stageNineResults); }, "returns result of stage nine", PERMISSION_ALL);
+		[this](auto) { cvarManager->log(stageNineResults); }, "returns result of stage nine", PERMISSION_ALL);*/
 }
 
 void PerfectSpeedflip::hookEvents() {
 	//gameWrapper->HookEventPost("Function TAGame.GameEvent_Soccar_TA.Countdown.EndState", [this](std::string) { startKickoff(); });
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_TA.BroadcastGoMessage", [this](std::string) { startKickoff(); });
+	gameWrapper->RegisterDrawable([this](auto canvas) { render(canvas); });
 }
 
 void PerfectSpeedflip::unhookEvents() {
@@ -56,10 +127,12 @@ void PerfectSpeedflip::unhookEvents() {
 }
 
 void PerfectSpeedflip::startKickoff() {
-	if (gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
-		gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { onTick(); });
+	if (gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame()) {
+		//gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { onTick(); });
+		gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { tick++; });
 		gameWrapper->HookEventPost("Function TAGame.Ball_TA.OnCarTouch", [this](std::string) { hitBall(); });
 		tick = 0;
+		/*
 		stageOneResults = "Stage 1 Results:\n";
 		stageTwoResults = "Stage 2 Results:\n";
 		stageThreeResults = "Stage 3 Results:\n";
@@ -69,9 +142,9 @@ void PerfectSpeedflip::startKickoff() {
 		stageSevenResults = "Stage 7 Results:\n";
 		stageEightResults = "Stage 8 Results:\n";
 		stageNineResults = "Stage 9 Results:\n";
+		*/
 	} else {
-		cvarManager->getCvar("speedflip_enable").setValue("0");
-		unhookEvents();
+		cvarManager->getCvar(enabledVarName).setValue("0");
 	}
 }
 
@@ -141,6 +214,22 @@ void PerfectSpeedflip::onTick() {
 		Throttle 1
 		Boost 1 */
 	if (tick < 50) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jump = 0;
+			nextInput.Jumped = 0;
+			nextInput.Pitch = 0;
+			nextInput.Roll = 0;
+			nextInput.Steer = 0;
+			nextInput.Yaw = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageOneResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 			//cvarManager->log(results);
@@ -162,6 +251,22 @@ void PerfectSpeedflip::onTick() {
 	// duration 5
 	// Steer -0.7
 	} else if (tick < 55) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jump = 0;
+			nextInput.Jumped = 0;
+			nextInput.Pitch = 0;
+			nextInput.Roll = 0;
+			nextInput.Yaw = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Steer = -0.7;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageTwoResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -187,6 +292,22 @@ void PerfectSpeedflip::onTick() {
 	//Jump 1
 	//Yaw - 1 (same as steer)
 	} else if (tick < 68) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Pitch = 0;
+			nextInput.Roll = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Steer = 0;
+			nextInput.Jump = 1;
+			nextInput.Yaw = -1;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageThreeResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -216,6 +337,22 @@ void PerfectSpeedflip::onTick() {
 	//Jump 0
 	//Yaw 0
 	} else if (tick < 69) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Pitch = 0;
+			nextInput.Roll = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Steer = 0;
+			nextInput.Jump = 0;
+			nextInput.Yaw = 0;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageFourResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -246,6 +383,22 @@ void PerfectSpeedflip::onTick() {
 	//Roll 0.4
 	//Jump 1
 	} else if (tick < 70) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Steer = 0;
+			nextInput.Yaw = 0;
+			nextInput.Pitch = -1.0;
+			nextInput.Roll = 0.4;
+			nextInput.Jump = 1;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageFiveResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -279,6 +432,22 @@ void PerfectSpeedflip::onTick() {
 	//Roll 1.
 	//Pitch 1.0
 	} else if (tick < 145) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Steer = 0;
+			nextInput.Yaw = 0;
+			nextInput.Jump = 1;
+			nextInput.Roll = 1;
+			nextInput.Pitch = 1;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageSixResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -312,6 +481,22 @@ void PerfectSpeedflip::onTick() {
 	//Steer 1
 	//Yaw 1
 	} else if (tick < 197) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Jump = 1;
+			nextInput.Roll = 1;
+			nextInput.Pitch = 1;
+			nextInput.Steer = 1;
+			nextInput.Yaw = 1;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageSevenResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -345,6 +530,22 @@ void PerfectSpeedflip::onTick() {
 	//Roll 0
 	//Yaw 0
 	} else if (tick < 247) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Jump = 1;
+			nextInput.Pitch = 1;
+			nextInput.Steer = 0;
+			nextInput.Roll = 0;
+			nextInput.Yaw = 0;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageEightResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -377,6 +578,22 @@ void PerfectSpeedflip::onTick() {
 	//Pitch 0
 	//Steer 0
 	} else if (tick < 317) {
+		if (example) {
+			ControllerInput nextInput;
+			nextInput.DodgeForward = 0;
+			nextInput.DodgeStrafe = 0;
+			nextInput.Handbrake = 0;
+			nextInput.Jumped = 0;
+			nextInput.Throttle = 1;
+			nextInput.HoldingBoost = 1;
+			nextInput.Jump = 1;
+			nextInput.Roll = 0;
+			nextInput.Yaw = 0;
+			nextInput.Pitch = 0;
+			nextInput.Steer = 0;
+			primaryCar.SetInput(nextInput);
+			input = nextInput;
+		}
 		if (!input.HoldingBoost) {
 			stageEightResults += "Must hold boost from tick 0 until ball is hit, not boosting on tick " + std::to_string(tick) + "\n";
 		}
@@ -416,7 +633,7 @@ void PerfectSpeedflip::hitBall() {
 	gameWrapper->UnhookEventPost("Function TAGame.Car_TA.SetVehicleInput");
 	gameWrapper->UnhookEventPost("Function TAGame.Ball_TA.OnCarTouch");
 	
-	cvarManager->log(stageOneResults);
+	/*cvarManager->log(stageOneResults);
 	cvarManager->log(stageTwoResults);
 	cvarManager->log(stageThreeResults);
 	cvarManager->log(stageFourResults);
@@ -424,10 +641,42 @@ void PerfectSpeedflip::hitBall() {
 	cvarManager->log(stageSixResults);
 	cvarManager->log(stageSevenResults);
 	cvarManager->log(stageEightResults);
-	cvarManager->log(stageNineResults);
-	cvarManager->log("Perfect theoretical ball hit is 318 ticks, you hit the ball on tick " + std::to_string(tick));
+	cvarManager->log(stageNineResults);*/
+	lastKickoffTime = tick;
+	kickoffs++;
+
+	if (kickoffs == 0) {
+		averageKickoffTime = tick;
+	} else {
+		averageKickoffTime *= kickoffs - 1;
+		averageKickoffTime += tick;
+		averageKickoffTime /= kickoffs;
+	}
+
+	cvarManager->log("You hit the ball on tick " + std::to_string(tick));
+	cvarManager->log("Tick / 120 = " + std::to_string((float) tick / 120.0) + " seconds");
 }
 
 void PerfectSpeedflip::onUnload()
 {
+}
+
+void PerfectSpeedflip::render(CanvasWrapper canvas) {
+	if (!enabledOverlay) {
+		return;
+	}
+
+	Vector2 screen = canvas.GetSize();
+
+	// in 1080p font size is 2
+	// height of size 2 text is approx 20px
+	float fontSize = ((float)screen.X / (float)1920) * 2;
+
+	canvas.SetColor(overlayColor);
+	Vector2 location = Vector2({ int(screen.X * xLocation), int(screen.Y * yLocation) });
+	canvas.SetPosition(location);
+	canvas.DrawString("Last Kickoff Time: " + std::to_string(lastKickoffTime) +  " Ticks / " + std::to_string(lastKickoffTime / 120.0) + " seconds", fontSize, fontSize);
+	location += Vector2({ 0, int(fontSize * 11) });
+	canvas.SetPosition(location);
+	canvas.DrawString("Average Kickoff Time: " + std::to_string(averageKickoffTime) +  " Ticks / " + std::to_string(averageKickoffTime / 120.0) + " seconds", fontSize, fontSize);
 }
