@@ -30,7 +30,7 @@ Rotator spawnRotations[] = {
 	Rotator(0, 0.5 * CONST_PI_F, 0)
 };
 
-// unused parts of broken kickoff trainer
+// parts of broken kickoff trainer
 std::string stageOneResults = "Stage 1 Results:\n";
 std::string stageTwoResults = "Stage 2 Results:\n";
 std::string stageThreeResults = "Stage 3 Results:\n";
@@ -117,7 +117,7 @@ void PerfectSpeedflip::onLoad()
 			}
 		}, "moves car to selected spawn location", PERMISSION_ALL);
 
-	/*
+	
 	cvarManager->registerCvar("speedflip_example", "0", "enables speedflip example", true, true, 0, true, 1)
 		.addOnValueChanged([this](std::string, CVarWrapper cvar) {
 		example = cvar.getBoolValue();
@@ -139,11 +139,10 @@ void PerfectSpeedflip::onLoad()
 	cvarManager->registerNotifier("speedflip_result_stage_eight",
 		[this](auto) { cvarManager->log(stageEightResults); }, "returns result of stage eight", PERMISSION_ALL);
 	cvarManager->registerNotifier("speedflip_result_stage_nine",
-		[this](auto) { cvarManager->log(stageNineResults); }, "returns result of stage nine", PERMISSION_ALL);*/
+		[this](auto) { cvarManager->log(stageNineResults); }, "returns result of stage nine", PERMISSION_ALL);
 }
 
 void PerfectSpeedflip::hookEvents() {
-	//gameWrapper->HookEventPost("Function TAGame.GameEvent_Soccar_TA.Countdown.EndState", [this](std::string) { startKickoff(); });
 	gameWrapper->HookEventPost("Function TAGame.GameEvent_TA.BroadcastGoMessage", [this](std::string) { startKickoff(); });
 	gameWrapper->RegisterDrawable([this](auto canvas) { render(canvas); });
 	cvarManager->setBind("XboxTypeS_DPad_Up", "kickoff_timer_score");
@@ -155,11 +154,10 @@ void PerfectSpeedflip::unhookEvents() {
 
 void PerfectSpeedflip::startKickoff() {
 	if (gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame()) {
-		//gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { onTick(); });
-		gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { tick++; });
+		gameWrapper->HookEventPost("Function TAGame.Car_TA.SetVehicleInput", [this](std::string) { onTick(); });
 		gameWrapper->HookEventPost("Function TAGame.Ball_TA.OnCarTouch", [this](std::string) { hitBall(); });
 		tick = 0;
-		/*
+		
 		stageOneResults = "Stage 1 Results:\n";
 		stageTwoResults = "Stage 2 Results:\n";
 		stageThreeResults = "Stage 3 Results:\n";
@@ -169,7 +167,7 @@ void PerfectSpeedflip::startKickoff() {
 		stageSevenResults = "Stage 7 Results:\n";
 		stageEightResults = "Stage 8 Results:\n";
 		stageNineResults = "Stage 9 Results:\n";
-		*/
+		
 	} else {
 		cvarManager->getCvar(enabledVarName).setValue("0");
 	}
@@ -660,7 +658,7 @@ void PerfectSpeedflip::hitBall() {
 	gameWrapper->UnhookEventPost("Function TAGame.Car_TA.SetVehicleInput");
 	gameWrapper->UnhookEventPost("Function TAGame.Ball_TA.OnCarTouch");
 	
-	/*cvarManager->log(stageOneResults);
+	cvarManager->log(stageOneResults);
 	cvarManager->log(stageTwoResults);
 	cvarManager->log(stageThreeResults);
 	cvarManager->log(stageFourResults);
@@ -668,7 +666,7 @@ void PerfectSpeedflip::hitBall() {
 	cvarManager->log(stageSixResults);
 	cvarManager->log(stageSevenResults);
 	cvarManager->log(stageEightResults);
-	cvarManager->log(stageNineResults);*/
+	cvarManager->log(stageNineResults);
 	lastKickoffTime = tick;
 	kickoffs++;
 
