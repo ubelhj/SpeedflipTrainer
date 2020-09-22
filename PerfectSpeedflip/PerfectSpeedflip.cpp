@@ -13,6 +13,22 @@ float yLocation;
 LinearColor overlayColor;
 bool enabledOverlay;
 std::string enabledVarName = "kickoff_timer_enable";
+int spawnChoice = 0;
+Vector spawnLocations[] = {
+	Vector(-2048, -2560, 19),
+	Vector(2048, -2560, 19),
+	Vector(-256, -3840, 19),
+	Vector(256, -3840, 19),
+	Vector(0, -4608, 19)
+};
+
+Rotator spawnRotations[] = {
+	Rotator(0, 0.25 * CONST_PI_F, 0),
+	Rotator(0, 0.75 * CONST_PI_F, 0),
+	Rotator(0, 0.5 * CONST_PI_F, 0),
+	Rotator(0, 0.5 * CONST_PI_F, 0),
+	Rotator(0, 0.5 * CONST_PI_F, 0)
+};
 
 // unused parts of broken kickoff trainer
 std::string stageOneResults = "Stage 1 Results:\n";
@@ -90,6 +106,17 @@ void PerfectSpeedflip::onLoad()
 				gameWrapper->UnhookEventPost("Function TAGame.Ball_TA.OnCarTouch");
 			}
 		}, "resets kickoff by scoring goal", PERMISSION_ALL);
+
+	cvarManager->registerNotifier("kickoff_timer_teleport",
+		[this](std::vector<std::string> params) {
+			if (gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame()) {
+				auto car = gameWrapper->GetLocalCar();
+				if (car.IsNull()) return;
+				car.SetLocation(spawnLocations[spawnChoice]);
+				car.SetRotation(spawnRotations[spawnChoice]);
+
+			}
+		}, "moves car to selected spawn location", PERMISSION_ALL);
 
 	/*
 	cvarManager->registerCvar("speedflip_example", "0", "enables speedflip example", true, true, 0, true, 1)
