@@ -17,9 +17,6 @@ class PerfectSpeedflip: public BakkesMod::Plugin::BakkesModPlugin
 
 	void startKickoff();
 	void hitBall();
-	
-	// not used, part of failed speedflip trainer
-	void onTick();
 
 	// renders plugin
 	void render(CanvasWrapper canvas);
